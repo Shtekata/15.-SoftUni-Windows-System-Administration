@@ -1,0 +1,5 @@
+objectClass,DN,sn,givenName,initials,sAMAccountName,userPrincipalName,userAccountControl
+user,"CN=Petko Iliev,OU=Managed Users,DC=WSA,DC=LAB",Iliev,Petko,V,petko.iliev,petko.iliev@wsa.lab,514
+user,"CN=Petar Stoyanov,OU=Managed Users,DC=WSA,DC=LAB",Stoyanov,Petar,M,petar.stoyanov,petar.stoyanov@wsa.lab,514
+user,"CN=Gergana Stoeva,OU=Managed Users,DC=WSA,DC=LAB",Stoeva,Gergana,P,gergana.stoeva,gergana.stoeva@wsa.lab,514
+user,"CN=Stefania Koleva,OU=Managed Users,DC=WSA,DC=LAB",Koleva,Stefania,O,stefania.koleva,stefania.koleva@wsa.lab,514
