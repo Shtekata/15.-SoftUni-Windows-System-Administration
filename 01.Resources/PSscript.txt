@@ -1,0 +1,249 @@
+# This file must be executed on the domaincontroller
+
+# Organizational Units
+
+New-ADOrganizationalUnit "Managed Computers"
+New-ADOrganizationalUnit "Sales Department" -Path "OU=Managed Computers,DC=WSA,DC=LAB"
+New-ADOrganizationalUnit "Managed Groups"
+New-ADOrganizationalUnit "Managed Users"
+New-ADOrganizationalUnit "Sales Department" -Path "OU=Managed Users,DC=WSA,DC=LAB"
+
+# Groups
+
+New-ADGroup "GS Help Desk" -Path "OU=Managed Groups,DC=WSA,DC=LAB"-GroupCategory Security -GroupScope Global
+New-ADGroup "GS IT" -Path "OU=Managed Groups,DC=WSA,DC=LAB" -GroupCategory Security -GroupScope Global
+Add-ADGroupMember "Domain Admins" "GS IT"
+New-ADGroup "GS Sales" -Path "OU=Managed Groups,DC=WSA,DC=LAB" -GroupCategory Security -GroupScope Global
+
+# Users
+
+New-ADUser ivan.ivanov -GivenName "Ivan" -Initials "T" -Surname "Ivanov" -SamAccountName ivan.ivanov -UserPrincipalName ivan.ivanov@wsa.lab -Path "OU=Managed Users,DC=WSA,DC=LAB" -AccountPassword (ConvertTo-SecureString -AsPlainText "Password1" -Force) -Enabled $true
+New-ADUser gergana.petkova -GivenName "Gergana" -Initials "V" -Surname "Petkova" -SamAccountName gergana.petkova -UserPrincipalName gergane.petkova@wsa.lab -Path "OU=Sales Department,OU=Managed Users,DC=WSA,DC=LAB" -AccountPassword (ConvertTo-SecureString -AsPlainText "Password1" -Force) -Enabled $true
+New-ADUser petya.georgieva -GivenName "Petya" -Initials "K" -Surname "Georgieva" -SamAccountName petya.georgieva -UserPrincipalName petya.georgievagwsa.lab -Path "OU=Sales Department,OU=Managed Users,DC=WSA,DC=LAB"-AccountPassword (ConvertTo-SecureString -AsPlainText "Password1" -Force) -Enabled $true
+New-ADUser stoyan.petkov -GivenName "Stoyan" -Initials "I" -Surname "Petkov" -SamAccountName stoyan.petkov -UserPrincipalName stoyan.petkov@wsa.lab -Path "OU=Sales Department,OU=Managed Users,DC=WSA,DC=LAB" -AccountPassword (ConvertTo-SecureString -AsPlainText "Password1" -Force) -Enabled $true
+
+# Group membership
+
+Add-ADGroupMember "GS IT" ivan.ivanov
+Add-ADGroupMember "GS Sales" gergana.petkova
+Add-ADGroupMember "GS Sales" petya.georgieva
+Add-ADGroupMember "GS Sales" stoyan.petkov
+
+Import-Module ADDSDeployment
+Install-ADDSForest `
+-CreateDnsDelegation:$false `
+-DatabasePath "C:\Windows\NTDS" `
+-DomainMode "WinThreshold" `
+-DomainName "wsa.lab" `
+-DomainNetbiosName "WSA" `
+-ForestMode "WinThreshold" `
+-InstallDns:$true `
+-LogPath "C:\Windows\NTDS" `
+-NoRebootOnCompletion:$false `
+-SysvolPath "C:\Windows\SYSVOL" `
+-Force:$true
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+foreach($a in ('BUDGET','CODE','PLAN','SALES','ZZZ')){new-item -type directory -path "c:/Important/$a";new-item -type file -path "c:/Important/$a/readme.txt"}
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+(get-counter '\processor(*)\% processor time').countersamples[1]|foreach-object{$_.timestamp.tostring()+' => '+$_.cookedvalue}|out-file -filepath c:/temp/CPU.log -append
+
+get-counter -counter '\memory\available mbytes'|foreach-object{$_.timestamp.tostring()+' => '+$_.countersamples.cookedvalue[0]}|out-file -filepath c:/temp/memory.log -append
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+do{
+    $FirstName=(Read-Host -Prompt 'Please enter your first name')
+    $LastName=(Read-Host -Prompt 'Please enter your last name')
+    $Password=(Read-Host -Prompt 'Please enter your password')
+
+    $SAN="$FirstName.$LastName".ToLower()
+
+    New-ADUser -name $FirstName -AccountPassword(ConvertTo-SecureString -AsPlainText $Password -Force) -GivenName $FirstName -Surname $LastName -displayname "$FirstName $LastName" -Enabled $true -UserPrincipalName "$SAN@wsa.lab" -SamAccountName $SAN
+
+    if(!(Test-Path -Path 'c:/shared')){md c:/Shared}
+    if(!(Test-Path -Path "c:/shared/$SAN")){md C:/Shared/$SAN}
+
+    $Answers='yes','no'
+    $AnotherUser=''
+        do{
+            $AnotherUser=(Read-Host -Prompt 'Would you like to register another user?').ToLower() 
+            if($AnotherUser -notin $Answers)
+                {
+                    Write-Host 'Please enter YES or NO'
+                }
+            }while($AnotherUser -notin $Answers)
+   }while($AnotherUser -eq 'yes')
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+   
+function Get-HostStatus{
+<#
+.synopsis
+Simple host pinging utility
+.description
+This function accepts three parameters $subnet, $start, $end
+.example
+Get-HostStatus -subnet '192.168.99.' -start 1 -end 100
+.notes
+First source the HostStarus.ps1 file. Keep in mind that if the function is executed without parameters there are some default values.
+.link
+https://google.com
+#>
+[cmdletbinding()]
+param([string]$subnet='192.168.99.',[int]$start=1,[int]$end=5)
+write-verbose "Pinging $subnet from $start to $end"
+$start..$end|where{test-connection $subnet$_ -count 1 -quiet}|foreach{"$subnet$_"}
+}
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+function Get-HostStatus {
+    <#
+.synopsis
+Simple host pinging utility
+.description
+This function accepts three parameters $subnet, $start, $end
+.example
+Get-HostStatus -subnet '192.168.50.' -start 1 -end 250
+.notes
+First source the HostStarus.ps1 file. Keep in mind that if the function is executed without parameters there are some default values.
+.link
+https://google.com
+#>
+    [cmdletbinding()]
+    param([string]$subnet = '192.168.50.', [int]$start = $null, [int]$end = $null)
+    write-verbose "Pinging $subnet from $start to $end"
+    $range = '1,Server LAN', '2,Bridge LAN',
+    '10,Shtekata Pers PC', '11,Shtekata Work PC', '12,Bobi Pers PC', '13,Zvezd Pers PC', '15,Access Point',
+    '50,Shtekata Phone', '51,Bobi Phone', '52,Zvezd Phone', '53,Shtekata Phone 5G', '54,Bobi Phone 5G', '55,Zvezd Phone 5G',
+    '105,ShtekataNAS LAN 1', '106,ShtekataNAS LAN 2', '110,AlpineNasVM', '111,UbuntuNasVM', 
+    '120,AlpineServerVM', '121,UbuntuServerVM', '122,CentosServerVM',
+    '130,CentosServerLxd', '131,UbuntuServerLxd', '132,FedoraServerLxd',
+    '150,Brother Printer', '151,Dreame Bot D9 Pro Vacuum Cleaner', '152,Nokia Streaming Box 8000', '153,Camera V-IPC-200W-TKWS', '154,Philips TV'
+    if ($start -and $end) {
+        $range = $start..$end
+        $range | ForEach-Object { if (test-connection $subnet$_ -count 1 -quiet) { Write-Host $subnet$_ }else { Write-Host 'Not responding!' } }
+    }
+    else {
+        $range | ForEach-Object {
+            $o = $_.ToString().Split(',')
+            $t = $subnet + $o[0]
+            if (test-connection $t -count 1 -quiet) { Write-Host "$t => "$o[1]"" }
+            else { Write-Host "$t => "$o[1]" - Not responding!" }
+        }
+    }
+}
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#
+# Guess Game
+#
+
+# Initialize variables
+$MinNo=1
+$MaxNo=10
+$GuessNum=(get-random -minimum $MinNo -maximum $MaxNo)
+
+write-host "I have a number between $MinNo and $MaxNo on my mind. Could you guess it?"
+write-host ''
+
+# Ask the opponent
+$MaxTries=(read-host -prompt 'How many attempts would you like to have')
+write-host ''
+
+# Initialize the guess attempt counter
+$GuessCnt=1
+
+# Start the guess loop
+do{
+    $Guess=(read-host -prompt "Your guess attempt no.$GuessCnt is")
+    write-host "You think that my number is $($Guess)? Let me see ..."
+    if($Guess -eq $GuessNum){
+        write-host 'Congratulations! You gusssed it!'
+        write-host "My number is $GuessNum"
+        break
+    }
+    if($Guess -lt $GuessNum){
+        write-host 'No. Try a bigger number.'
+    }
+    if($Guess -gt $GuessNum){
+        write-host 'No. Try a smaller number.'
+    }
+    write-host ''
+    $GuessCnt++
+}while($GuessCnt -le $MaxTries)
+
+if($GuessCnt -gt $MaxTries){
+    write-host 'My friend, you ran out of attempts ...'
+    write-host "GAME OVER. My number was: $GuessNum"
+}
+
+param([int]$ProjectStart=2,[int]$ProjectEnd=2,[int]$PhaseStart=2,[int]$PhaseEnd=2)
+if(!(Test-Path -Path 'cprojects')){md cProjects}
+for($counter=$ProjectStart;$counter -le $ProjectEnd;$counter++){
+    md cprojectsProject$counter
+    for($counter2=$PhaseStart;$counter2 -le $PhaseEnd;$counter2++){
+        md cprojectsproject$counterPhase$counter2
+    }
+}
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+function Project-Phase {
+    
+    <#
+        .synopsys
+        Simple tool for creating 1 leve nested folders
+        .description
+        This function accepts four parameters: ProjectStart, ProjectEnd, PhaseStart, PhaseEnd
+        .example
+        Project-Phase -ProjectStart 5 -ProjectEnd 10 -PhaseStart 35 -PhaseEnd 75
+        .notes
+        First source the ProjectPhase.ps1 file.
+        .link
+        https://softuni.bg
+    #>
+
+    [cmdletbinding()]
+
+    param([int]$ProjectStart=0,[int]$ProjectEnd=0,[int]$PhaseStart=0,[int]$PhaseEnd=0)
+    
+    Write-Verbose 'Create folder structure from Projects and Phases'
+    
+    if(!(Test-Path -Path 'c:/projects')){md c:/Projects}
+    
+    for($counter=$ProjectStart;$counter -le $ProjectEnd;$counter++){
+    
+        md "c:/projects/Project$counter"
+    
+        for($counter2=$PhaseStart;$counter2 -le $PhaseEnd;$counter2++){
+    
+            md "c:/projects/project$counter/Phase$counter2"
+    
+        }
+    
+    }
+
+}
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+$a=Get-Counter '\processor(*)\% processor time'
+$b=ConvertTo-Json($a)|Write-Host
+
+$c=$a.CounterSamples[1].Timestamp.ToString()
+$d=$a.CounterSamples[1].CookedValue
+"$c => $d"|Tee-Object -FilePath C:\Temp\Track-CPU.log -Append|Write-Host
+
+get-counter -listset *
+get-counter -listset *|sort countersetname|format-table countersetname,countersettype -autosize
+get-counter -listset memory, (get-counter -listset memory).counter
+(get-counter '\Memory\Available MBytes').countersamples.cookedvalue
+(get-counter '\Memory\Available MBytes').countersamples.timestamp
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
